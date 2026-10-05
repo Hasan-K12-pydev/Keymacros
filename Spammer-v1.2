@@ -1,0 +1,95 @@
+import tkinter as tk
+from tkinter import ttk
+import keyboard
+import threading
+import time
+import os
+
+class SpammerGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Key Macro v1.2")
+        self.root.geometry("320x340")
+        self.root.resizable(False, False)
+        
+        # Sol üst köşedeki pencere ikonunu ayarla (Hata vermemesi için dosya kontrolü yapıyoruz)
+        if os.path.exists('icon.ico'):
+            self.root.iconbitmap('icon.ico')
+        
+        self.running = False
+        
+        # --- Arayüz Elemanları ---
+        title_label = ttk.Label(root, text="Keyboard Macro", font=("Arial", 14, "bold"))
+        title_label.pack(pady=10)
+        
+        key_frame = ttk.LabelFrame(root, text=" Keys to Activate: ", padding=10, takefocus=False)
+        key_frame.pack(pady=10, fill="x", padx=20)
+        
+        self.var_q = tk.BooleanVar(value=True)
+        self.var_f = tk.BooleanVar(value=True)
+        self.var_tab = tk.BooleanVar(value=True)
+        
+        ttk.Checkbutton(key_frame, text="Q key", variable=self.var_q, takefocus=False).pack(anchor="w")
+        ttk.Checkbutton(key_frame, text="F key", variable=self.var_f, takefocus=False).pack(anchor="w")
+        ttk.Checkbutton(key_frame, text="TAB key", variable=self.var_tab, takefocus=False).pack(anchor="w")
+        
+        speed_frame = ttk.Frame(root, takefocus=False)
+        speed_frame.pack(pady=10)
+        
+        ttk.Label(speed_frame, text="Key Delay (Second):", takefocus=False).pack(side="left", padx=5)
+        
+        self.speed_entry = ttk.Entry(speed_frame, width=6, takefocus=False)
+        self.speed_entry.insert(0, "0.1")
+        self.speed_entry.pack(side="left", padx=5)
+        
+        self.status_label = ttk.Label(root, text="STATUS: Paused", foreground="red", font=("Arial", 10, "bold"), takefocus=False)
+        self.status_label.pack(pady=5)
+        
+        self.btn_toggle = ttk.Button(root, text="START (F8)", command=self.toggle_spammer, width=20, takefocus=False)
+        self.btn_toggle.pack(pady=10)
+        
+        self.root.configure(takefocus=False)
+        
+        self.spammer_thread = threading.Thread(target=self.key_spammer_loop, daemon=True)
+        self.spammer_thread.start()
+        
+        keyboard.add_hotkey('f8', self.toggle_spammer)
+        
+    def toggle_spammer(self):
+        self.running = not self.running
+        if self.running:
+            self.root.focus_set() 
+            self.status_label.config(text="STATUS: RUNNING...", foreground="green")
+            self.btn_toggle.config(text="STOP (F8)")
+        else:
+            self.status_label.config(text="STATUS: Paused", foreground="red")
+            self.btn_toggle.config(text="START (F8)")
+
+    def key_spammer_loop(self):
+        while True:
+            if self.running:
+                try:
+                    delay = float(self.speed_entry.get())
+                    if delay < 0.01: delay = 0.01
+                except ValueError:
+                    delay = 0.1
+                
+                if self.var_q.get() and self.running:
+                    keyboard.send('q')
+                    time.sleep(delay)
+                    
+                if self.var_f.get() and self.running:
+                    keyboard.send('f')
+                    time.sleep(delay)
+                    
+                if self.var_tab.get() and self.running:
+                    keyboard.send('tab')
+                    time.sleep(delay)
+            else:
+                time.sleep(0.1)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = SpammerGUI(root)
+    root.mainloop()
+    
